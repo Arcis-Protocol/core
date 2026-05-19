@@ -1,0 +1,22 @@
+# Compiler output
+/out/
+/cache/
+
+# Foundry
+/broadcast/
+/*.log
+
+# Dependencies
+/lib/
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
