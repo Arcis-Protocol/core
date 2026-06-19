@@ -25,6 +25,7 @@ contract StrategyAave is BaseStrategy {
         address _aavePool,
         address _aToken
     ) BaseStrategy(_vault, _usdc) {
+        require(_aavePool != address(0) && _aToken != address(0), "ZERO_ADDRESS");
         aavePool = _aavePool;
         aToken = _aToken;
 

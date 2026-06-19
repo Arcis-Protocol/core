@@ -24,6 +24,7 @@ contract StrategyMorpho is BaseStrategy {
         address _usdc,
         address _morphoVault
     ) BaseStrategy(_vault, _usdc) {
+        require(_morphoVault != address(0), "ZERO_ADDRESS");
         morphoVault = _morphoVault;
 
         // Approve MetaMorpho vault to spend USDC

@@ -32,6 +32,7 @@ contract StrategyOndoUSDY is BaseStrategy {
         address _usdy,
         address _ondoRouter
     ) BaseStrategy(_vault, _usdc) {
+        require(_usdy != address(0) && _ondoRouter != address(0), "ZERO_ADDRESS");
         usdy = _usdy;
         ondoRouter = _ondoRouter;
 

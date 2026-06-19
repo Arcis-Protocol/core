@@ -293,6 +293,14 @@ contract RevenueBondFactory is IRevenueBond {
         originationFeeBps = feeBps;
     }
 
+    function pause() external onlyOwner {
+        paused = true;
+    }
+
+    function unpause() external onlyOwner {
+        paused = false;
+    }
+
     // ══════════════════════════════════════════════════════════════
     //                    INTERNAL FUNCTIONS
     // ══════════════════════════════════════════════════════════════

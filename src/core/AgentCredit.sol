@@ -287,6 +287,14 @@ contract AgentCredit is IAgentCredit {
         identityRegistry = registry;
     }
 
+    function pause() external onlyOwner {
+        paused = true;
+    }
+
+    function unpause() external onlyOwner {
+        paused = false;
+    }
+
     // ══════════════════════════════════════════════════════════════
     //                    INTERNAL FUNCTIONS
     // ══════════════════════════════════════════════════════════════
