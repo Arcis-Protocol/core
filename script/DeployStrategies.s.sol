@@ -20,12 +20,13 @@ contract DeployStrategies is Script {
     address constant AAVE_POOL = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
     address constant AAVE_AUSDC = 0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB;
 
-    // Morpho Blue MetaMorpho USDC vault on Base (verify at morpho.org)
-    address constant MORPHO_VAULT = address(0); // TODO: set before deploy
+    // Morpho Blue MetaMorpho USDC vault on Base
+    // Blue Chip USDC Vault (Prime): https://app.morpho.org/base/vault/0x8A034f069D59d62a4643ad42E49b846d036468D7
+    address constant MORPHO_VAULT = 0x8A034f069D59d62a4643ad42E49b846d036468D7;
 
-    // Ondo USDY on Base (verify at ondo.finance)
-    address constant ONDO_USDY = address(0);    // TODO: set before deploy
-    address constant ONDO_ROUTER = address(0);  // TODO: set before deploy
+    // Ondo USDY — not yet deployed on Base
+    address constant ONDO_USDY = address(0);    // Phase 2: pending Ondo Base deployment
+    address constant ONDO_ROUTER = address(0);  // Phase 2: pending Ondo Base deployment
 
     function run() external {
         uint256 deployerPK = vm.envUint("PRIVATE_KEY");

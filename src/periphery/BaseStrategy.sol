@@ -50,6 +50,7 @@ abstract contract BaseStrategy is IStrategyAdapter {
     function transferOwnership(address newOwner) external onlyOwner {
         if (newOwner == address(0)) revert ErrorLib.ZeroAddress();
         owner = newOwner;
+        // Event omitted — use owner() view to check
     }
 
     // ── Safe token helpers ──

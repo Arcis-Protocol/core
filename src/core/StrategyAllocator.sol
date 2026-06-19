@@ -18,7 +18,7 @@ contract StrategyAllocator {
     // ══════════════════════════════════════════════════════════════
 
     address public owner;
-    address public vault;
+    address public immutable vault;
 
     /// @notice Timelock duration for allocation changes (in seconds)
     uint256 public timelockDuration;

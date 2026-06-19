@@ -26,8 +26,8 @@ contract RevenueBondFactory is IRevenueBond {
     // ══════════════════════════════════════════════════════════════
 
     address public owner;
-    address public usdc;
-    address public identityRegistry;
+    address public immutable usdc;
+    address public immutable identityRegistry;
 
     uint256 public bondCount;
     mapping(uint256 => Bond) public bonds;
@@ -237,7 +237,7 @@ contract RevenueBondFactory is IRevenueBond {
             abi.encodeWithSignature("releaseRevenue(uint256)", bondId)
         );
 
-        uint256 received;
+        uint256 received = 0;
         if (success) {
             received = _usdcBalance() - balanceBefore;
         }

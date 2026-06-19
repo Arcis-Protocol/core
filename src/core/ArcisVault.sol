@@ -97,7 +97,7 @@ contract ArcisVault is IAgentTreasury {
     mapping(address => bool) public isStrategy;
 
     /// @notice Target reserve ratio in bps (portion kept liquid in vault)
-    uint256 public reserveRatioBps;
+    uint256 public immutable reserveRatioBps;
 
     // ══════════════════════════════════════════════════════════════
     //                         EVENTS
@@ -298,7 +298,7 @@ contract ArcisVault is IAgentTreasury {
     function updateAllocations(uint256[] calldata weights) external onlyOwner {
         if (weights.length != strategies.length) revert ErrorLib.InvalidAllocation();
 
-        uint256 sum;
+        uint256 sum = 0;
         for (uint256 i; i < weights.length; ++i) {
             sum += weights[i];
         }
@@ -338,7 +338,7 @@ contract ArcisVault is IAgentTreasury {
         }
 
         // Recalculate total deployed value
-        uint256 newDeployed;
+        uint256 newDeployed = 0;
         for (uint256 i; i < strategies.length; ++i) {
             newDeployed += strategies[i].totalValue();
         }

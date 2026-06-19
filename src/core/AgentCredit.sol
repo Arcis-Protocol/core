@@ -39,15 +39,15 @@ contract AgentCredit is IAgentCredit {
     // ══════════════════════════════════════════════════════════════
 
     address public owner;
-    address public vault;        // ArcisVault address
-    address public usdc;         // USDC token
+    address public immutable vault;        // ArcisVault address
+    address public immutable usdc;         // USDC token
     address public identityRegistry; // ERC-8004 registry (address(0) = no identity checks)
 
     uint256 public loanCount;
     mapping(uint256 => Loan) public loans;
 
     /// @notice Base interest rate for agents with no identity (in bps)
-    uint256 public baseRateBps;
+    uint256 public immutable baseRateBps;
 
     /// @notice Total USDC currently lent out
     uint256 public totalBorrowed;
