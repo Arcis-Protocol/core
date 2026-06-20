@@ -78,6 +78,11 @@ contract RevenueBondFactory is IRevenueBond {
         _;
     }
 
+    modifier whenNotPaused() {
+        require(!paused, "PAUSED");
+        _;
+    }
+
     // ══════════════════════════════════════════════════════════════
     //                       CONSTRUCTOR
     // ══════════════════════════════════════════════════════════════
@@ -111,7 +116,7 @@ contract RevenueBondFactory is IRevenueBond {
         uint256 principal,
         uint256 couponBps,
         uint256 durationBlocks
-    ) external nonReentrant returns (uint256 bondId) {
+    ) external nonReentrant whenNotPaused returns (uint256 bondId) {
         if (revenueSource == address(0)) revert ErrorLib.ZeroAddress();
         if (principal == 0) revert ErrorLib.ZeroAmount();
         if (durationBlocks > maxDurationBlocks) revert ErrorLib.InvalidAllocation();
@@ -140,7 +145,7 @@ contract RevenueBondFactory is IRevenueBond {
     }
 
     /// @inheritdoc IRevenueBond
-    function purchase(uint256 bondId, uint256 amount) external nonReentrant returns (uint256 tokens) {
+    function purchase(uint256 bondId, uint256 amount) external nonReentrant whenNotPaused returns (uint256 tokens) {
         Bond storage bond = bonds[bondId];
         if (bond.status != BondStatus.Active) revert ErrorLib.BondNotActive(bondId);
         if (bond.filled + amount > bond.principal) revert ErrorLib.VaultCapExceeded(amount, bond.principal - bond.filled);
@@ -168,7 +173,7 @@ contract RevenueBondFactory is IRevenueBond {
     }
 
     /// @inheritdoc IRevenueBond
-    function claimCoupon(uint256 bondId) external nonReentrant returns (uint256 payout) {
+    function claimCoupon(uint256 bondId) external nonReentrant whenNotPaused returns (uint256 payout) {
         uint256 holderBal = bondBalances[bondId][msg.sender];
         if (holderBal == 0) revert ErrorLib.ZeroAmount();
 
@@ -194,7 +199,7 @@ contract RevenueBondFactory is IRevenueBond {
     }
 
     /// @inheritdoc IRevenueBond
-    function redeem(uint256 bondId) external nonReentrant returns (uint256 principal) {
+    function redeem(uint256 bondId) external nonReentrant whenNotPaused returns (uint256 principal) {
         Bond storage bond = bonds[bondId];
         if (block.number < bond.maturityBlock) revert ErrorLib.BondNotMatured(bondId);
 
@@ -235,7 +240,7 @@ contract RevenueBondFactory is IRevenueBond {
 
     /// @inheritdoc IRevenueBond
     /// @notice Called by the revenue source or keeper to deposit revenue into escrow
-    function serviceDebt(uint256 bondId) external nonReentrant {
+    function serviceDebt(uint256 bondId) external nonReentrant whenNotPaused {
         Bond storage bond = bonds[bondId];
         if (bond.status != BondStatus.Active) revert ErrorLib.BondNotActive(bondId);
 
@@ -262,7 +267,7 @@ contract RevenueBondFactory is IRevenueBond {
 
     /// @notice Deposit USDC into escrow for principal return (does NOT count as coupon revenue)
     /// @dev Called by agent or keeper to fund the principal return at maturity
-    function depositPrincipal(uint256 bondId, uint256 amount) external nonReentrant {
+    function depositPrincipal(uint256 bondId, uint256 amount) external nonReentrant whenNotPaused {
         Bond storage bond = bonds[bondId];
         if (bond.status != BondStatus.Active) revert ErrorLib.BondNotActive(bondId);
 

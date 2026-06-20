@@ -329,9 +329,10 @@ contract ArcisVault is IAgentTreasury {
     /// @notice Harvest yield from all strategies, take fee, update deployed balance
     function harvest() external nonReentrant returns (uint256 totalYield) {
         uint256 totalValueBefore = deployedBalance;
+        uint256 stratLen = strategies.length;
 
         // Harvest each strategy
-        for (uint256 i; i < strategies.length; ++i) {
+        for (uint256 i; i < stratLen; ++i) {
             if (strategies[i].isActive()) {
                 strategies[i].harvest();
             }
@@ -339,7 +340,7 @@ contract ArcisVault is IAgentTreasury {
 
         // Recalculate total deployed value
         uint256 newDeployed = 0;
-        for (uint256 i; i < strategies.length; ++i) {
+        for (uint256 i; i < stratLen; ++i) {
             newDeployed += strategies[i].totalValue();
         }
 
@@ -470,7 +471,8 @@ contract ArcisVault is IAgentTreasury {
 
     /// @dev Deploy capital to strategies according to allocation weights
     function _deployToStrategies(uint256 amount) internal {
-        for (uint256 i; i < strategies.length; ++i) {
+        uint256 stratLen = strategies.length;
+        for (uint256 i; i < stratLen; ++i) {
             if (!strategies[i].isActive()) continue;
 
             uint256 portion = MathLib.bps(amount, allocationWeights[i]);
@@ -487,8 +489,8 @@ contract ArcisVault is IAgentTreasury {
 
     /// @dev Pull capital from strategies to cover withdrawal deficit
     function _pullFromStrategies(uint256 deficit) internal returns (uint256 totalPulled) {
-        // Pull proportionally from each strategy, starting with highest liquidity
-        for (uint256 i; i < strategies.length && totalPulled < deficit; ++i) {
+        uint256 stratLen = strategies.length;
+        for (uint256 i; i < stratLen && totalPulled < deficit; ++i) {
             if (!strategies[i].isActive()) continue;
 
             uint256 available = strategies[i].availableLiquidity();
