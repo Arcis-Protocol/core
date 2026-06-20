@@ -44,6 +44,9 @@ contract RevenueBondFactory is IRevenueBond {
     /// @notice Revenue escrow balances per bond
     mapping(uint256 => uint256) public escrowBalances;
 
+    /// @notice Total revenue ever accumulated per bond (for pro-rata calculations)
+    mapping(uint256 => uint256) public totalRevenueAccumulated;
+
     /// @notice Minimum ERC-8004 score to issue bonds
     uint256 public minIssuerScore;
 
@@ -166,19 +169,22 @@ contract RevenueBondFactory is IRevenueBond {
 
     /// @inheritdoc IRevenueBond
     function claimCoupon(uint256 bondId) external nonReentrant returns (uint256 payout) {
-        // Bond lookup not needed — balances tracked separately
         uint256 holderBal = bondBalances[bondId][msg.sender];
         if (holderBal == 0) revert ErrorLib.ZeroAmount();
 
-        // Calculate pro-rata share of available coupon
-        uint256 totalAvailable = escrowBalances[bondId];
+        // Calculate pro-rata share of ALL revenue ever accumulated
+        uint256 totalAccumulated = totalRevenueAccumulated[bondId];
         uint256 alreadyClaimed = couponClaimed[bondId][msg.sender];
 
-        // Holder's share of total coupon = (holderBalance / bondSupply) * totalAvailable
-        uint256 holderShare = MathLib.mulDiv(totalAvailable, holderBal, bondSupply[bondId]);
+        uint256 holderShare = MathLib.mulDiv(totalAccumulated, holderBal, bondSupply[bondId]);
 
         if (holderShare <= alreadyClaimed) return 0;
         payout = holderShare - alreadyClaimed;
+
+        // Cap at available escrow
+        if (payout > escrowBalances[bondId]) {
+            payout = escrowBalances[bondId];
+        }
 
         couponClaimed[bondId][msg.sender] += payout;
         escrowBalances[bondId] -= payout;
@@ -195,24 +201,29 @@ contract RevenueBondFactory is IRevenueBond {
         uint256 holderBal = bondBalances[bondId][msg.sender];
         if (holderBal == 0) revert ErrorLib.ZeroAmount();
 
-        // Claim any remaining coupon first
-        uint256 coupon = _claimRemainingCoupon(bondId, msg.sender);
+        // Calculate unclaimed coupon
+        uint256 coupon = _calculateUnclaimedCoupon(bondId, msg.sender);
 
-        // Return principal pro-rata
+        // Burn bond tokens
         principal = holderBal; // 1:1 with USDC
         bondBalances[bondId][msg.sender] = 0;
         bondSupply[bondId] -= holderBal;
 
-        // Check if escrow has enough for principal return
-        if (escrowBalances[bondId] >= principal) {
-            escrowBalances[bondId] -= principal;
-            _safeTransfer(usdc, msg.sender, principal + coupon);
+        // Total owed = principal + unclaimed coupon
+        uint256 totalOwed = principal + coupon;
+        uint256 available = escrowBalances[bondId];
+
+        if (available >= totalOwed) {
+            // Fully funded — return everything
+            escrowBalances[bondId] -= totalOwed;
+            couponClaimed[bondId][msg.sender] += coupon;
+            _safeTransfer(usdc, msg.sender, totalOwed);
         } else {
-            // Partial return — bond may be in default territory
-            uint256 available = escrowBalances[bondId];
+            // Underfunded — return what's available
             escrowBalances[bondId] = 0;
-            _safeTransfer(usdc, msg.sender, available + coupon);
-            principal = available;
+            couponClaimed[bondId][msg.sender] += coupon;
+            _safeTransfer(usdc, msg.sender, available);
+            principal = available > coupon ? available - coupon : 0;
         }
 
         // Mark matured if fully redeemed
@@ -244,8 +255,20 @@ contract RevenueBondFactory is IRevenueBond {
 
         if (received > 0) {
             escrowBalances[bondId] += received;
+            totalRevenueAccumulated[bondId] += received;
             bond.totalCouponPaid += received;
         }
+    }
+
+    /// @notice Deposit USDC into escrow for principal return (does NOT count as coupon revenue)
+    /// @dev Called by agent or keeper to fund the principal return at maturity
+    function depositPrincipal(uint256 bondId, uint256 amount) external nonReentrant {
+        Bond storage bond = bonds[bondId];
+        if (bond.status != BondStatus.Active) revert ErrorLib.BondNotActive(bondId);
+
+        _safeTransferFrom(usdc, msg.sender, address(this), amount);
+        escrowBalances[bondId] += amount;
+        // NOTE: intentionally does NOT increment totalRevenueAccumulated
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -267,11 +290,14 @@ contract RevenueBondFactory is IRevenueBond {
         uint256 holderBal = bondBalances[bondId][holder];
         if (holderBal == 0 || bondSupply[bondId] == 0) return 0;
 
-        uint256 totalAvailable = escrowBalances[bondId];
-        uint256 holderShare = MathLib.mulDiv(totalAvailable, holderBal, bondSupply[bondId]);
+        uint256 totalAccumulated = totalRevenueAccumulated[bondId];
+        uint256 holderShare = MathLib.mulDiv(totalAccumulated, holderBal, bondSupply[bondId]);
         uint256 claimed = couponClaimed[bondId][holder];
 
-        return holderShare > claimed ? holderShare - claimed : 0;
+        if (holderShare <= claimed) return 0;
+        uint256 unclaimed = holderShare - claimed;
+        uint256 available = escrowBalances[bondId];
+        return unclaimed > available ? available : unclaimed;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -305,18 +331,20 @@ contract RevenueBondFactory is IRevenueBond {
     //                    INTERNAL FUNCTIONS
     // ══════════════════════════════════════════════════════════════
 
-    function _claimRemainingCoupon(uint256 bondId, address holder) internal returns (uint256 payout) {
+    function _calculateUnclaimedCoupon(uint256 bondId, address holder) internal view returns (uint256 payout) {
         uint256 holderBal = bondBalances[bondId][holder];
         if (holderBal == 0 || bondSupply[bondId] == 0) return 0;
 
-        uint256 totalAvailable = escrowBalances[bondId];
-        uint256 holderShare = MathLib.mulDiv(totalAvailable, holderBal, bondSupply[bondId]);
+        uint256 totalAccumulated = totalRevenueAccumulated[bondId];
+        uint256 holderShare = MathLib.mulDiv(totalAccumulated, holderBal, bondSupply[bondId]);
         uint256 claimed = couponClaimed[bondId][holder];
 
         if (holderShare > claimed) {
             payout = holderShare - claimed;
-            couponClaimed[bondId][holder] += payout;
-            escrowBalances[bondId] -= payout;
+            // Cap at escrow
+            if (payout > escrowBalances[bondId]) {
+                payout = escrowBalances[bondId];
+            }
         }
     }
 
