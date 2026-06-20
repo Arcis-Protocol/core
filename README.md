@@ -238,6 +238,7 @@ script/
 | [`docs`](https://github.com/Arcis-Protocol/docs) | Protocol docs, ATI spec, integration guides |
 | [`mcp`](https://github.com/Arcis-Protocol/mcp) | MCP Server — connect any AI agent in one tool call |
 | [`monitor`](https://github.com/Arcis-Protocol/monitor) | On-chain monitoring + Telegram alerts |
+| [`custos`](https://github.com/Arcis-Protocol/custos) | CUSTOS — autonomous keeper agent |
 
 ---
 
