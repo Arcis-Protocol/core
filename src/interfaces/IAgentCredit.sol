@@ -45,4 +45,11 @@ interface IAgentCredit {
     event LoanCreated(uint256 indexed loanId, address indexed agent, uint256 borrowed, uint256 collateral);
     event LoanRepaid(uint256 indexed loanId, address indexed agent, uint256 totalRepaid);
     event LoanLiquidated(uint256 indexed loanId, address indexed agent, address indexed liquidator);
+    event PoolFunded(address indexed funder, uint256 amount);
+    event CollateralRatiosUpdated(uint256[5] ratios);
+    event RateDiscountsUpdated(uint256[5] discounts);
+    event IdentityRegistryUpdated(address indexed oldRegistry, address indexed newRegistry);
+    event Paused(address indexed account);
+    event Unpaused(address indexed account);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 }

@@ -44,6 +44,7 @@ contract StrategyAllocator {
     event AllocationExecuted(uint256[] weights);
     event AllocationCancelled();
     event DriftThresholdUpdated(uint256 oldThreshold, uint256 newThreshold);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     // ══════════════════════════════════════════════════════════════
     //                        MODIFIERS
@@ -169,5 +170,13 @@ contract StrategyAllocator {
 
     function setTimelockDuration(uint256 newDuration) external onlyOwner {
         timelockDuration = newDuration;
+    }
+
+    /// @notice Transfer ownership to a new address (for multisig migration)
+    function transferOwnership(address newOwner) external onlyOwner {
+        if (newOwner == address(0)) revert ErrorLib.ZeroAddress();
+        address old = owner;
+        owner = newOwner;
+        emit OwnershipTransferred(old, newOwner);
     }
 }

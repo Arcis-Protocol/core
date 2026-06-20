@@ -271,28 +271,44 @@ contract AgentCredit is IAgentCredit {
     function fundPool(uint256 amount) external {
         _safeTransferFrom(usdc, msg.sender, address(this), amount);
         lendingPool += amount;
+        emit PoolFunded(msg.sender, amount);
     }
 
     /// @notice Update collateral ratios per tier
     function setCollateralRatios(uint256[5] calldata ratios) external onlyOwner {
         collateralRatios = ratios;
+        emit CollateralRatiosUpdated(ratios);
     }
 
     /// @notice Update rate discounts per tier
     function setRateDiscounts(uint256[5] calldata discounts) external onlyOwner {
         rateDiscounts = discounts;
+        emit RateDiscountsUpdated(discounts);
     }
 
     function setIdentityRegistry(address registry) external onlyOwner {
+        address old = identityRegistry;
         identityRegistry = registry;
+        emit IdentityRegistryUpdated(old, registry);
     }
 
     function pause() external onlyOwner {
         paused = true;
+        emit Paused(msg.sender);
     }
 
     function unpause() external onlyOwner {
         paused = false;
+        emit Unpaused(msg.sender);
+    }
+
+    /// @notice Transfer ownership to a new address (for multisig migration)
+    /// @param newOwner Address of the new owner
+    function transferOwnership(address newOwner) external onlyOwner {
+        if (newOwner == address(0)) revert ErrorLib.ZeroAddress();
+        address old = owner;
+        owner = newOwner;
+        emit OwnershipTransferred(old, newOwner);
     }
 
     // ══════════════════════════════════════════════════════════════

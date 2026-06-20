@@ -50,4 +50,7 @@ interface IRevenueBond {
     event CouponPaid(uint256 indexed bondId, uint256 totalPaid);
     event BondMatured(uint256 indexed bondId);
     event BondDefaulted(uint256 indexed bondId);
+    event Paused(address indexed account);
+    event Unpaused(address indexed account);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 }

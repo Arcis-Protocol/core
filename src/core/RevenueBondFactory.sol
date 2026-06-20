@@ -326,10 +326,20 @@ contract RevenueBondFactory is IRevenueBond {
 
     function pause() external onlyOwner {
         paused = true;
+        emit Paused(msg.sender);
     }
 
     function unpause() external onlyOwner {
         paused = false;
+        emit Unpaused(msg.sender);
+    }
+
+    /// @notice Transfer ownership to a new address (for multisig migration)
+    function transferOwnership(address newOwner) external onlyOwner {
+        if (newOwner == address(0)) revert ErrorLib.ZeroAddress();
+        address old = owner;
+        owner = newOwner;
+        emit OwnershipTransferred(old, newOwner);
     }
 
     // ══════════════════════════════════════════════════════════════
