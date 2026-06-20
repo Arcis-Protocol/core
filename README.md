@@ -232,7 +232,7 @@ script/
 
 | Repo | Description |
 |---|---|
-| [`sdk`](https://github.com/Arcis-Protocol/sdk) | TypeScript SDK — `@arcis/sdk`, viem-based |
+| [`sdk`](https://github.com/Arcis-Protocol/sdk) | TypeScript SDK — `@arcisprotocol/sdk`, viem-based |
 | [`cli`](https://github.com/Arcis-Protocol/cli) | Terminal interface — TUI for vault operations |
 | [`app`](https://github.com/Arcis-Protocol/app) | Landing page + dashboard — [arcis.money](https://arcis.money) |
 | [`docs`](https://github.com/Arcis-Protocol/docs) | Protocol docs, ATI spec, integration guides |
