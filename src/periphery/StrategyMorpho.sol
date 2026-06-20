@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {BaseStrategy} from "./BaseStrategy.sol";
+import {ErrorLib} from "../libraries/ErrorLib.sol";
 import {MathLib} from "../libraries/MathLib.sol";
 
 /// @title StrategyMorpho
@@ -24,7 +25,7 @@ contract StrategyMorpho is BaseStrategy {
         address _usdc,
         address _morphoVault
     ) BaseStrategy(_vault, _usdc) {
-        require(_morphoVault != address(0), "ZERO_ADDRESS");
+        if (_morphoVault == address(0)) revert ErrorLib.ZeroAddress();
         morphoVault = _morphoVault;
 
         // Approve MetaMorpho vault to spend USDC
@@ -41,7 +42,7 @@ contract StrategyMorpho is BaseStrategy {
                 address(this)
             )
         );
-        require(success, "MORPHO_DEPOSIT_FAILED");
+        if (!success) revert ErrorLib.CallFailed();
 
         uint256 shares = abi.decode(data, (uint256));
         vaultShares += shares;
@@ -61,7 +62,7 @@ contract StrategyMorpho is BaseStrategy {
                 address(this)   // burn shares from this strategy
             )
         );
-        require(success, "MORPHO_WITHDRAW_FAILED");
+        if (!success) revert ErrorLib.CallFailed();
 
         uint256 sharesBurned = abi.decode(data, (uint256));
         vaultShares = vaultShares > sharesBurned ? vaultShares - sharesBurned : 0;
@@ -88,7 +89,7 @@ contract StrategyMorpho is BaseStrategy {
         // Most MetaMorpho vaults expose this via off-chain APIs
         // On-chain approximation: compare totalAssets growth over time
         // For now, return a conservative estimate
-        // TODO: integrate Morpho APY oracle when available on Base
+        // NOTE: Morpho APY oracle not yet available on Base. Returns 0 until oracle integration.
         return 400; // 4.00% default — updated by keeper
     }
 
@@ -135,7 +136,7 @@ contract StrategyMorpho is BaseStrategy {
                 address(this)
             )
         );
-        require(success, "MORPHO_EMERGENCY_FAILED");
+        if (!success) revert ErrorLib.CallFailed();
 
         recovered = abi.decode(data, (uint256));
         vaultShares = 0;

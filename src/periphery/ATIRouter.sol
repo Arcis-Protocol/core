@@ -77,7 +77,7 @@ contract ATIRouter {
         (bool success, bytes memory data) = vault.staticcall(
             abi.encodeWithSelector(0x70a08231, msg.sender) // balanceOf
         );
-        require(success);
+        if (!success) revert ErrorLib.CallFailed();
         uint256 shares = abi.decode(data, (uint256));
         if (shares == 0) return 0;
 
@@ -92,7 +92,7 @@ contract ATIRouter {
         (bool success, bytes memory data) = usdc.staticcall(
             abi.encodeWithSelector(0x70a08231, msg.sender)
         );
-        require(success);
+        if (!success) revert ErrorLib.CallFailed();
         uint256 amount = abi.decode(data, (uint256));
         if (amount == 0) return 0;
 
@@ -138,7 +138,7 @@ contract ATIRouter {
         (bool success, bytes memory data) = credit.staticcall(
             abi.encodeWithSignature("totalOwed(uint256)", loanId)
         );
-        require(success);
+        if (!success) revert ErrorLib.CallFailed();
         uint256 owed = abi.decode(data, (uint256));
 
         // Step 1: Transfer repayment USDC from agent
@@ -152,7 +152,7 @@ contract ATIRouter {
         (success, data) = vault.staticcall(
             abi.encodeWithSelector(0x70a08231, address(this))
         );
-        require(success);
+        if (!success) revert ErrorLib.CallFailed();
         uint256 shares = abi.decode(data, (uint256));
 
         // Step 4: Withdraw collateral as USDC
@@ -197,20 +197,20 @@ contract ATIRouter {
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(0xa9059cbb, to, amount)
         );
-        require(success && (data.length == 0 || abi.decode(data, (bool))));
+        if (!success || (data.length > 0 && !abi.decode(data, (bool)))) revert ErrorLib.TransferFailed();
     }
 
     function _safeTransferFrom(address token, address from, address to, uint256 amount) internal {
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(0x23b872dd, from, to, amount)
         );
-        require(success && (data.length == 0 || abi.decode(data, (bool))));
+        if (!success || (data.length > 0 && !abi.decode(data, (bool)))) revert ErrorLib.TransferFailed();
     }
 
     function _safeApprove(address token, address spender, uint256 amount) internal {
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(0x095ea7b3, spender, amount)
         );
-        require(success && (data.length == 0 || abi.decode(data, (bool))));
+        if (!success || (data.length > 0 && !abi.decode(data, (bool)))) revert ErrorLib.TransferFailed();
     }
 }

@@ -47,7 +47,7 @@ contract AgentCredit is IAgentCredit {
     mapping(uint256 => Loan) public loans;
 
     /// @notice Base interest rate for agents with no identity (in bps)
-    uint256 public immutable baseRateBps;
+    uint256 public baseRateBps;
 
     /// @notice Total USDC currently lent out
     uint256 public totalBorrowed;
@@ -292,6 +292,15 @@ contract AgentCredit is IAgentCredit {
         emit IdentityRegistryUpdated(old, registry);
     }
 
+    /// @notice Update the base interest rate
+    /// @param newRateBps New base rate in bps (max 3000 = 30%)
+    function setBaseRate(uint256 newRateBps) external onlyOwner {
+        if (newRateBps > MAX_RATE_BPS) revert ErrorLib.InvalidAllocation();
+        uint256 old = baseRateBps;
+        baseRateBps = newRateBps;
+        emit BaseRateUpdated(old, newRateBps);
+    }
+
     function pause() external onlyOwner {
         paused = true;
         emit Paused(msg.sender);
@@ -386,13 +395,13 @@ contract AgentCredit is IAgentCredit {
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(0xa9059cbb, to, amount)
         );
-        require(success && (data.length == 0 || abi.decode(data, (bool))));
+        if (!success || (data.length > 0 && !abi.decode(data, (bool)))) revert ErrorLib.TransferFailed();
     }
 
     function _safeTransferFrom(address token, address from, address to, uint256 amount) internal {
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(0x23b872dd, from, to, amount)
         );
-        require(success && (data.length == 0 || abi.decode(data, (bool))));
+        if (!success || (data.length > 0 && !abi.decode(data, (bool)))) revert ErrorLib.TransferFailed();
     }
 }

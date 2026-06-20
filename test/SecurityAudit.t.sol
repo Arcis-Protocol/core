@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import "../src/core/ArcisVault.sol";
+import {ErrorLib} from "../src/libraries/ErrorLib.sol";
 import "../src/core/AgentCredit.sol";
 import "../src/core/RevenueBondFactory.sol";
 import "./mocks/MockUSDC.sol";
@@ -126,7 +127,7 @@ contract SecurityAuditTest is Test {
         registry.setScore(user1, 75);
         bonds.pause();
         vm.prank(user1);
-        vm.expectRevert("PAUSED");
+        vm.expectRevert(abi.encodeWithSelector(ErrorLib.VaultPaused.selector));
         bonds.issueBond(address(0x1), 100_000e6, 800, 1_000_000);
     }
 
@@ -138,7 +139,7 @@ contract SecurityAuditTest is Test {
         vm.prank(user2);
         usdc.approve(address(bonds), type(uint256).max);
         vm.prank(user2);
-        vm.expectRevert("PAUSED");
+        vm.expectRevert(abi.encodeWithSelector(ErrorLib.VaultPaused.selector));
         bonds.purchase(bondId, 50_000e6);
     }
 

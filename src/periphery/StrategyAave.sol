@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {BaseStrategy} from "./BaseStrategy.sol";
+import {ErrorLib} from "../libraries/ErrorLib.sol";
 
 /// @title StrategyAave
 /// @author Arcis Protocol
@@ -25,7 +26,7 @@ contract StrategyAave is BaseStrategy {
         address _aavePool,
         address _aToken
     ) BaseStrategy(_vault, _usdc) {
-        require(_aavePool != address(0) && _aToken != address(0), "ZERO_ADDRESS");
+        if (_aavePool == address(0) || _aToken == address(0)) revert ErrorLib.ZeroAddress();
         aavePool = _aavePool;
         aToken = _aToken;
 
@@ -45,7 +46,7 @@ contract StrategyAave is BaseStrategy {
                 0              // no referral
             )
         );
-        require(success, "AAVE_SUPPLY_FAILED");
+        if (!success) revert ErrorLib.CallFailed();
 
         _deployedAmount += amount;
         deployed = amount;
@@ -63,7 +64,7 @@ contract StrategyAave is BaseStrategy {
                 vault // send USDC directly to vault
             )
         );
-        require(success, "AAVE_WITHDRAW_FAILED");
+        if (!success) revert ErrorLib.CallFailed();
 
         withdrawn = abi.decode(data, (uint256));
         _deployedAmount = _deployedAmount > withdrawn ? _deployedAmount - withdrawn : 0;
@@ -128,7 +129,7 @@ contract StrategyAave is BaseStrategy {
                 vault
             )
         );
-        require(success, "AAVE_EMERGENCY_FAILED");
+        if (!success) revert ErrorLib.CallFailed();
 
         recovered = abi.decode(data, (uint256));
         _deployedAmount = 0;

@@ -79,7 +79,7 @@ contract RevenueBondFactory is IRevenueBond {
     }
 
     modifier whenNotPaused() {
-        require(!paused, "PAUSED");
+        if (paused) revert ErrorLib.VaultPaused();
         _;
     }
 
@@ -266,7 +266,13 @@ contract RevenueBondFactory is IRevenueBond {
     }
 
     /// @notice Deposit USDC into escrow for principal return (does NOT count as coupon revenue)
-    /// @dev Called by agent or keeper to fund the principal return at maturity
+    /// @dev Intentionally permissionless: anyone can fund a bond's principal escrow.
+    ///      This enables third-party keepers, protocol treasuries, or the agent itself
+    ///      to ensure principal is available for redemption at maturity.
+    ///      Funds deposited via this function are NOT tracked as revenue and do NOT
+    ///      inflate coupon obligations — they are purely for principal return.
+    /// @param bondId The bond to fund
+    /// @param amount USDC amount to deposit into escrow
     function depositPrincipal(uint256 bondId, uint256 amount) external nonReentrant whenNotPaused {
         Bond storage bond = bonds[bondId];
         if (bond.status != BondStatus.Active) revert ErrorLib.BondNotActive(bondId);
@@ -383,13 +389,13 @@ contract RevenueBondFactory is IRevenueBond {
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(0xa9059cbb, to, amount)
         );
-        require(success && (data.length == 0 || abi.decode(data, (bool))));
+        if (!success || (data.length > 0 && !abi.decode(data, (bool)))) revert ErrorLib.TransferFailed();
     }
 
     function _safeTransferFrom(address token, address from, address to, uint256 amount) internal {
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(0x23b872dd, from, to, amount)
         );
-        require(success && (data.length == 0 || abi.decode(data, (bool))));
+        if (!success || (data.length > 0 && !abi.decode(data, (bool)))) revert ErrorLib.TransferFailed();
     }
 }

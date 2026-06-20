@@ -52,4 +52,5 @@ interface IAgentCredit {
     event Paused(address indexed account);
     event Unpaused(address indexed account);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event BaseRateUpdated(uint256 oldRate, uint256 newRate);
 }

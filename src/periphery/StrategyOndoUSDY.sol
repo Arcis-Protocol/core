@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {BaseStrategy} from "./BaseStrategy.sol";
+import {ErrorLib} from "../libraries/ErrorLib.sol";
 import {MathLib} from "../libraries/MathLib.sol";
 
 /// @title StrategyOndoUSDY
@@ -32,7 +33,7 @@ contract StrategyOndoUSDY is BaseStrategy {
         address _usdy,
         address _ondoRouter
     ) BaseStrategy(_vault, _usdc) {
-        require(_usdy != address(0) && _ondoRouter != address(0), "ZERO_ADDRESS");
+        if (_usdy == address(0) || _ondoRouter == address(0)) revert ErrorLib.ZeroAddress();
         usdy = _usdy;
         ondoRouter = _ondoRouter;
 
@@ -51,7 +52,7 @@ contract StrategyOndoUSDY is BaseStrategy {
         (bool success,) = ondoRouter.call(
             abi.encodeWithSignature("mint(uint256)", amount)
         );
-        require(success, "ONDO_MINT_FAILED");
+        if (!success) revert ErrorLib.CallFailed();
 
         uint256 usdyAfter = _balanceOf(usdy, address(this));
         uint256 minted = usdyAfter - usdyBefore;
@@ -75,7 +76,7 @@ contract StrategyOndoUSDY is BaseStrategy {
         (bool success,) = ondoRouter.call(
             abi.encodeWithSignature("redeem(uint256)", usdyNeeded)
         );
-        require(success, "ONDO_REDEEM_FAILED");
+        if (!success) revert ErrorLib.CallFailed();
 
         // Transfer redeemed USDC to vault
         uint256 redeemed = _balanceOf(usdc, address(this));

@@ -40,4 +40,7 @@ library ErrorLib {
     // ── Access ──
     error Unauthorized(address caller);
     error OnlyRouter();
+    error CallFailed();
+    error TransferFailed();
+    error ApprovalFailed();
 }

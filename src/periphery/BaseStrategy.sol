@@ -59,21 +59,21 @@ abstract contract BaseStrategy is IStrategyAdapter {
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(0xa9059cbb, to, amount)
         );
-        require(success && (data.length == 0 || abi.decode(data, (bool))));
+        if (!success || (data.length > 0 && !abi.decode(data, (bool)))) revert ErrorLib.TransferFailed();
     }
 
     function _safeTransferFrom(address token, address from, address to, uint256 amount) internal {
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(0x23b872dd, from, to, amount)
         );
-        require(success && (data.length == 0 || abi.decode(data, (bool))));
+        if (!success || (data.length > 0 && !abi.decode(data, (bool)))) revert ErrorLib.TransferFailed();
     }
 
     function _safeApprove(address token, address spender, uint256 amount) internal {
         (bool success, bytes memory data) = token.call(
             abi.encodeWithSelector(0x095ea7b3, spender, amount)
         );
-        require(success && (data.length == 0 || abi.decode(data, (bool))));
+        if (!success || (data.length > 0 && !abi.decode(data, (bool)))) revert ErrorLib.TransferFailed();
     }
 
     function _balanceOf(address token, address account) internal view returns (uint256) {
