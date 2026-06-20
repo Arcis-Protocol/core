@@ -121,10 +121,11 @@ contract ATIRouter {
         shares = IAgentTreasury(vault).deposit(depositAmount);
 
         // Step 2: Use raUSDC as collateral to borrow
-        // Approve credit module to take the shares
         loanId = IAgentCredit(credit).borrow(borrowAmount, shares);
 
-        // Borrowed USDC goes to agent via the credit module
+        // Step 3: Forward borrowed USDC to the agent
+        // (credit.borrow sends USDC to msg.sender which is this router)
+        _safeTransfer(usdc, msg.sender, borrowAmount);
     }
 
     /// @notice Repay a loan and withdraw the freed collateral

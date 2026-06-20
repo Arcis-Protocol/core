@@ -226,7 +226,7 @@ contract ArcisVault is IAgentTreasury {
         // Transfer USDC to agent
         _safeTransfer(USDC, msg.sender, amount);
 
-        emit Withdraw(msg.sender, shares, amount);
+        emit Withdraw(msg.sender, amount, shares);
     }
 
     /// @inheritdoc IAgentTreasury
@@ -242,6 +242,21 @@ contract ArcisVault is IAgentTreasury {
     /// @notice Total USDC value managed by the vault
     function totalAssets() public view returns (uint256) {
         return reserveBalance + deployedBalance;
+    }
+
+    /// @notice The underlying asset token address (ATI v1.1)
+    /// @dev Agents call this to discover what token to approve before depositing
+    function asset() external view returns (address) {
+        return USDC;
+    }
+
+    /// @notice Maximum amount that can be deposited by a given agent (ATI v1.1)
+    /// @dev Returns 0 if vault is paused or at capacity
+    function maxDeposit(address) external view returns (uint256) {
+        if (paused) return 0;
+        uint256 total = totalAssets();
+        if (total >= depositCap) return 0;
+        return depositCap - total;
     }
 
     /// @notice Current exchange rate: USDC per raUSDC share (in WAD)
