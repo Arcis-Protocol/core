@@ -6,28 +6,20 @@ pragma solidity ^0.8.24;
 library MathLib {
     uint256 internal constant WAD = 1e18;
 
+    error DivisionByZero();
+    error Overflow();
+
     /// @notice Multiply then divide with full precision
-    /// @param x First operand
-    /// @param y Second operand (numerator multiplier)
-    /// @param z Denominator
-    /// @return result x * y / z rounded down
     function mulDiv(uint256 x, uint256 y, uint256 z) internal pure returns (uint256 result) {
-        require(z > 0, "DIVISION_BY_ZERO");
-
-        // Use mulmod for overflow detection
-        mulmod(x, y, z); // overflow check
+        if (z == 0) revert DivisionByZero();
         result = (x * y) / z;
-
-        // If no remainder or no overflow risk, return
-        // For production values (USDC 6 decimals, shares < 1e30), overflow is not a concern
-        // This simplified version handles all realistic protocol values
     }
 
     /// @notice Multiply then divide, rounding up
     function mulDivUp(uint256 x, uint256 y, uint256 z) internal pure returns (uint256) {
         uint256 result = mulDiv(x, y, z);
         if (mulmod(x, y, z) > 0) {
-            require(result < type(uint256).max);
+            if (result == type(uint256).max) revert Overflow();
             result++;
         }
         return result;
@@ -41,13 +33,9 @@ library MathLib {
         uint256 totalAssets,
         bool roundUp
     ) internal pure returns (uint256) {
-        // Virtual offset: 1 share = 1e6 (USDC decimals)
         uint256 virtualShares = totalShares + 1;
         uint256 virtualAssets = totalAssets + 1e6;
-
-        if (roundUp) {
-            return mulDivUp(assets, virtualShares, virtualAssets);
-        }
+        if (roundUp) return mulDivUp(assets, virtualShares, virtualAssets);
         return mulDiv(assets, virtualShares, virtualAssets);
     }
 
@@ -60,10 +48,7 @@ library MathLib {
     ) internal pure returns (uint256) {
         uint256 virtualShares = totalShares + 1;
         uint256 virtualAssets = totalAssets + 1e6;
-
-        if (roundUp) {
-            return mulDivUp(shares, virtualAssets, virtualShares);
-        }
+        if (roundUp) return mulDivUp(shares, virtualAssets, virtualShares);
         return mulDiv(shares, virtualAssets, virtualShares);
     }
 
@@ -72,18 +57,7 @@ library MathLib {
         return mulDiv(amount, basisPoints, 10_000);
     }
 
-    /// @notice Returns the smaller of two values
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
-    }
-
-    /// @notice Returns the larger of two values
-    function max(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b ? a : b;
-    }
-
-    /// @notice Absolute difference between two values
-    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b ? a - b : b - a;
-    }
+    function min(uint256 a, uint256 b) internal pure returns (uint256) { return a < b ? a : b; }
+    function max(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a : b; }
+    function absDiff(uint256 a, uint256 b) internal pure returns (uint256) { return a > b ? a - b : b - a; }
 }
