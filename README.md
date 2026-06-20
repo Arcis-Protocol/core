@@ -137,7 +137,7 @@ cd core
 forge install
 forge build
 
-# Run tests (38 tests, 2 fuzz suites @ 1000 runs)
+# Run tests (90 tests)
 forge test
 
 # Run with verbose output
@@ -169,10 +169,11 @@ Solana expansion planned for Phase 2.
 ## Test Results
 
 ```
-38 tests passed, 0 failed
-├── ArcisVault: 27 tests (deposit, withdraw, balance, strategy, harvest, ERC-20, admin, fuzz)
+90 tests passed, 0 failed
+├── ArcisVault: 27 tests (deposit, withdraw, balance, strategy, harvest, ERC-20, admin)
 ├── AgentCredit: 11 tests (borrow, repay, collateral tiers, health factor, interest)
-└── Fuzz: 2 suites × 1000 runs (deposit/withdraw roundtrip, share price monotonicity)
+├── RevenueBondFactory: 20 tests (issue, purchase, coupon, redeem, service, pause)
+├── SecurityAudit: 32 tests (access control, pause enforcement, edge cases, invariants)
 ```
 
 ## Project Structure
@@ -205,6 +206,8 @@ src/
 test/
 ├── ArcisVault.t.sol
 ├── AgentCredit.t.sol
+├── RevenueBondFactory.t.sol
+├── SecurityAudit.t.sol
 └── mocks/
     ├── MockUSDC.sol
     ├── MockStrategy.sol
@@ -233,6 +236,8 @@ script/
 | [`cli`](https://github.com/Arcis-Protocol/cli) | Terminal interface — TUI for vault operations |
 | [`app`](https://github.com/Arcis-Protocol/app) | Landing page + dashboard — [arcis.money](https://arcis.money) |
 | [`docs`](https://github.com/Arcis-Protocol/docs) | Protocol docs, ATI spec, integration guides |
+| [`mcp`](https://github.com/Arcis-Protocol/mcp) | MCP Server — connect any AI agent in one tool call |
+| [`monitor`](https://github.com/Arcis-Protocol/monitor) | On-chain monitoring + Telegram alerts |
 
 ---
 
