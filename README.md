@@ -7,7 +7,9 @@
   <br />
   <a href="https://arcis.money">arcis.money</a>
   &nbsp;&middot;&nbsp;
-  <a href="https://github.com/Arcis-Protocol/core/tree/main/docs">Docs</a>
+  <a href="https://arcis.money/dashboard">Dashboard</a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://github.com/Arcis-Protocol/docs">Docs</a>
   &nbsp;&middot;&nbsp;
   <a href="https://github.com/Arcis-Protocol/core/tree/main/src">Contracts</a>
 </p>
@@ -222,6 +224,15 @@ script/
 | 2 — Active | 26-50 | 150% | 200 bps |
 | 3 — Established | 51-75 | 130% | 350 bps |
 | 4 — Elite | 76-100 | 115% | 500 bps |
+
+## Related Repos
+
+| Repo | Description |
+|---|---|
+| [`sdk`](https://github.com/Arcis-Protocol/sdk) | TypeScript SDK — `@arcis/sdk`, viem-based |
+| [`cli`](https://github.com/Arcis-Protocol/cli) | Terminal interface — TUI for vault operations |
+| [`app`](https://github.com/Arcis-Protocol/app) | Landing page + dashboard — [arcis.money](https://arcis.money) |
+| [`docs`](https://github.com/Arcis-Protocol/docs) | Protocol docs, ATI spec, integration guides |
 
 ---
 
