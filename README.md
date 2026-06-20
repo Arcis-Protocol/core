@@ -137,7 +137,7 @@ cd core
 forge install
 forge build
 
-# Run tests (90 tests)
+# Run tests (116 tests)
 forge test
 
 # Run with verbose output
@@ -169,7 +169,7 @@ Solana expansion planned for Phase 2.
 ## Test Results
 
 ```
-90 tests passed, 0 failed
+116 tests passed, 0 failed
 ├── ArcisVault: 27 tests (deposit, withdraw, balance, strategy, harvest, ERC-20, admin)
 ├── AgentCredit: 11 tests (borrow, repay, collateral tiers, health factor, interest)
 ├── RevenueBondFactory: 20 tests (issue, purchase, coupon, redeem, service, pause)
