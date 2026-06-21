@@ -1,0 +1,74 @@
+type VaultSnapshot @entity {
+  id: ID!
+  timestamp: BigInt!
+  block: BigInt!
+  tvl: BigDecimal!
+  totalSupply: BigDecimal!
+  exchangeRate: BigDecimal!
+  reserveBalance: BigDecimal!
+  deployedBalance: BigDecimal!
+  paused: Boolean!
+}
+
+type Deposit @entity {
+  id: ID!
+  agent: Bytes!
+  amount: BigDecimal!
+  shares: BigDecimal!
+  timestamp: BigInt!
+  block: BigInt!
+  txHash: Bytes!
+}
+
+type Withdrawal @entity {
+  id: ID!
+  agent: Bytes!
+  amount: BigDecimal!
+  shares: BigDecimal!
+  timestamp: BigInt!
+  block: BigInt!
+  txHash: Bytes!
+}
+
+type Harvest @entity {
+  id: ID!
+  totalYield: BigDecimal!
+  fee: BigDecimal!
+  timestamp: BigInt!
+  block: BigInt!
+  txHash: Bytes!
+}
+
+type Loan @entity {
+  id: ID!
+  loanId: BigInt!
+  agent: Bytes!
+  amount: BigDecimal!
+  collateral: BigDecimal!
+  rateBps: BigInt!
+  createdAt: BigInt!
+  repaid: Boolean!
+  liquidated: Boolean!
+  repaidAt: BigInt
+}
+
+type CreditSnapshot @entity {
+  id: ID!
+  timestamp: BigInt!
+  lendingPool: BigDecimal!
+  totalBorrowed: BigDecimal!
+  utilization: BigDecimal!
+  activeLoans: BigInt!
+}
+
+type ProtocolStats @entity {
+  id: ID!
+  totalDeposits: BigInt!
+  totalWithdrawals: BigInt!
+  totalHarvests: BigInt!
+  totalLoansCreated: BigInt!
+  totalLoansRepaid: BigInt!
+  totalLiquidations: BigInt!
+  cumulativeYield: BigDecimal!
+  cumulativeFees: BigDecimal!
+}

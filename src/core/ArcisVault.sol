@@ -356,6 +356,51 @@ contract ArcisVault is IAgentTreasury {
         return _convertToAssets(shares, false);
     }
 
+    // ══════════════════════════════════════════════════════════════
+    //                     ERC-4626 COMPATIBILITY
+    // ══════════════════════════════════════════════════════════════
+
+    /// @notice Convert asset amount to share amount (no rounding direction preference)
+    function convertToShares(uint256 assets) external view returns (uint256) {
+        return _convertToShares(assets, false);
+    }
+
+    /// @notice Convert share amount to asset amount
+    function convertToAssets(uint256 shares) external view returns (uint256) {
+        return _convertToAssets(shares, false);
+    }
+
+    /// @notice Preview redeem (alias for previewWithdraw — same calculation)
+    function previewRedeem(uint256 shares) external view returns (uint256) {
+        return _convertToAssets(shares, false);
+    }
+
+    /// @notice Preview mint — how many assets needed to mint exact shares
+    function previewMint(uint256 shares) external view returns (uint256) {
+        return _convertToAssets(shares, true); // Round up for minting
+    }
+
+    /// @notice Maximum assets an owner can withdraw
+    function maxWithdraw(address owner) external view returns (uint256) {
+        if (paused) return 0;
+        if (balanceOf[owner] == 0) return 0;
+        return _convertToAssets(balanceOf[owner], false);
+    }
+
+    /// @notice Maximum shares an owner can redeem
+    function maxRedeem(address owner) external view returns (uint256) {
+        if (paused) return 0;
+        return balanceOf[owner];
+    }
+
+    /// @notice Maximum shares that can be minted (based on remaining deposit cap)
+    function maxMint(address) external view returns (uint256) {
+        if (paused) return 0;
+        uint256 total = totalAssets();
+        if (total >= depositCap) return 0;
+        return _convertToShares(depositCap - total, false);
+    }
+
     /// @notice Remaining capacity before deposit cap
     function remainingCapacity() external view returns (uint256) {
         uint256 total = totalAssets();

@@ -33,6 +33,7 @@ contract AgentCredit is IAgentCredit {
 
     /// @notice Maximum interest rate: 50% APR
     uint256 public constant MAX_RATE_BPS = 5_000;
+    uint256 public constant BPS_DENOMINATOR = 10_000;
 
     // ══════════════════════════════════════════════════════════════
     //                         STORAGE
@@ -48,6 +49,15 @@ contract AgentCredit is IAgentCredit {
 
     /// @notice Base interest rate for agents with no identity (in bps)
     uint256 public baseRateBps;
+
+    /// @notice Optimal utilization target in bps (e.g. 8000 = 80%)
+    uint256 public optimalUtilBps = 8_000;
+
+    /// @notice Rate slope below optimal utilization (bps)
+    uint256 public slope1Bps = 400;
+
+    /// @notice Rate slope above optimal utilization — steep jump rate (bps)
+    uint256 public slope2Bps = 7_500;
 
     /// @notice Total USDC currently lent out
     uint256 public totalBorrowed;
@@ -301,6 +311,19 @@ contract AgentCredit is IAgentCredit {
         emit BaseRateUpdated(old, newRateBps);
     }
 
+    /// @notice Update utilization rate curve parameters
+    function setRateCurve(uint256 _optimalUtilBps, uint256 _slope1Bps, uint256 _slope2Bps) external onlyOwner {
+        if (_optimalUtilBps > BPS_DENOMINATOR) revert ErrorLib.InvalidAllocation();
+        optimalUtilBps = _optimalUtilBps;
+        slope1Bps = _slope1Bps;
+        slope2Bps = _slope2Bps;
+    }
+
+    /// @notice View the current effective rate for an agent
+    function getEffectiveRate(address agent) external view returns (uint256) {
+        return _getInterestRate(agent);
+    }
+
     function pause() external onlyOwner {
         paused = true;
         emit Paused(msg.sender);
@@ -347,10 +370,29 @@ contract AgentCredit is IAgentCredit {
 
     /// @dev Get interest rate for an agent based on reputation
     function _getInterestRate(address agent) internal view returns (uint256) {
+        // Calculate utilization-based rate
+        uint256 total = lendingPool + totalBorrowed;
+        uint256 utilRate = baseRateBps;
+
+        if (total > 0) {
+            uint256 utilBps = (totalBorrowed * BPS_DENOMINATOR) / total;
+
+            if (utilBps <= optimalUtilBps) {
+                // Below optimal: linear slope
+                utilRate = baseRateBps + (utilBps * slope1Bps) / optimalUtilBps;
+            } else {
+                // Above optimal: base + full slope1 + steep slope2
+                uint256 excessUtil = utilBps - optimalUtilBps;
+                uint256 maxExcess = BPS_DENOMINATOR - optimalUtilBps;
+                utilRate = baseRateBps + slope1Bps + (excessUtil * slope2Bps) / maxExcess;
+            }
+        }
+
+        // Apply tier discount
         uint256 tier = _getReputationTier(agent);
         uint256 discount = rateDiscounts[tier];
-        if (discount >= baseRateBps) return 0;
-        return baseRateBps - discount;
+        if (discount >= utilRate) return 0;
+        return utilRate - discount;
     }
 
     /// @dev Get USDC value of raUSDC shares

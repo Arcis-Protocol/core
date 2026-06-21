@@ -1,0 +1,60 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: ArcisVault
+    network: base-sepolia
+    source:
+      address: "0xa8eF658E125C7f6D7aFa9B6b8035b66b32CBE98d"
+      abi: ArcisVault
+      startBlock: 1
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - VaultSnapshot
+        - Deposit
+        - Withdrawal
+      abis:
+        - name: ArcisVault
+          file: ./abis/ArcisVault.json
+      eventHandlers:
+        - event: Deposit(indexed address,uint256,uint256)
+          handler: handleDeposit
+        - event: Withdraw(indexed address,uint256,uint256)
+          handler: handleWithdraw
+        - event: Harvested(uint256,uint256)
+          handler: handleHarvest
+        - event: Paused(indexed address)
+          handler: handlePause
+        - event: Unpaused(indexed address)
+          handler: handleUnpause
+      file: ./src/vault.ts
+
+  - kind: ethereum
+    name: AgentCredit
+    network: base-sepolia
+    source:
+      address: "0x019540E33a0292a9DDE36bD9Ef11774d5A1Ce6FC"
+      abi: AgentCredit
+      startBlock: 1
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Loan
+        - CreditSnapshot
+      abis:
+        - name: AgentCredit
+          file: ./abis/AgentCredit.json
+      eventHandlers:
+        - event: LoanCreated(indexed uint256,indexed address,uint256,uint256,uint256)
+          handler: handleLoanCreated
+        - event: LoanRepaid(indexed uint256,indexed address,uint256)
+          handler: handleLoanRepaid
+        - event: LoanLiquidated(indexed uint256,indexed address,uint256)
+          handler: handleLoanLiquidated
+      file: ./src/credit.ts
