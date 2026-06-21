@@ -1,250 +1,97 @@
-<p align="center">
-  <br />
-  <strong>ARCIS PROTOCOL</strong>
-  <br />
-  <em>Financial infrastructure for autonomous AI agents</em>
-  <br />
-  <br />
-  <a href="https://arcis.money">arcis.money</a>
-  &nbsp;&middot;&nbsp;
-  <a href="https://arcis.money/dashboard">Dashboard</a>
-  &nbsp;&middot;&nbsp;
-  <a href="https://github.com/Arcis-Protocol/docs">Docs</a>
-  &nbsp;&middot;&nbsp;
-  <a href="https://github.com/Arcis-Protocol/core/tree/main/src">Contracts</a>
-</p>
+# Arcis Protocol — Core Contracts
 
-<br />
-
-```
-        ╔═══════════════════════════════════════╗
-        ║                                       ║
-        ║     deposit(amount) → shares          ║
-        ║     withdraw(shares) → amount         ║
-        ║     balance(agent)  → value           ║
-        ║                                       ║
-        ║     The Agent Treasury Interface.     ║
-        ║     Three functions. One standard.    ║
-        ║                                       ║
-        ╚═══════════════════════════════════════╝
-```
-
-<br />
-
-## The Problem
-
-AI agents hold capital. They earn revenue, manage treasuries, pay for services.
-But every financial instrument on-chain was designed for humans.
-
-Agents do not need dashboards. They do not click buttons.
-They need three functions and a yield source.
-
-## The Protocol
-
-Arcis builds the savings account, credit line, and bond market for the machine economy.
-
-**Phase 1 — Agent Vaults**
-Deposit USDC. Receive raUSDC. Earn yield from Aave, Morpho, and Ondo USDY.
-Auto-allocated. Auto-compounded. No human interaction required.
-
-**Phase 2 — Agent Credit**
-Borrow against raUSDC collateral. Collateral ratios set by ERC-8004 reputation score.
-200% for anonymous agents. 115% for agents with proven track records.
-Per-block interest. Instant liquidation. No grace periods. Machines do not need grace periods.
-
-**Phase 3 — Revenue Bonds**
-Agents with verified cash flows issue tokenized bonds.
-Human investors buy yield. Smart contracts service debt before agent profits.
-
----
-
-## Architecture
-
-```
-                    ┌─────────────────────┐
-                    │     ATI Router       │
-                    │  (single entry point)│
-                    └──┬──────┬──────┬────┘
-                       │      │      │
-              ┌────────┘      │      └────────┐
-              ▼               ▼               ▼
-        ┌───────────┐  ┌────────────┐  ┌────────────┐
-        │  Arcis    │  │   Agent    │  │  Revenue   │
-        │  Vault    │  │   Credit   │  │   Bonds    │
-        │           │  │            │  │            │
-        │  ERC-4626 │  │  ERC-8004  │  │  ERC-1155  │
-        │  raUSDC   │  │  Identity  │  │  Bond NFT  │
-        └─────┬─────┘  └────────────┘  └────────────┘
-              │
-     ┌────────┼────────┐
-     ▼        ▼        ▼
-  ┌──────┐ ┌──────┐ ┌──────┐
-  │ Aave │ │Morpho│ │ Ondo │
-  │  V3  │ │ Blue │ │ USDY │
-  └──────┘ └──────┘ └──────┘
-```
+Smart contracts powering financial infrastructure for autonomous AI agents. Deployed on Base.
 
 ## Contracts
 
-| Contract | Description | Lines |
+### Core
+
+| Contract | Description |
+|---|---|
+| `ArcisVault` | ERC-4626 yield-bearing vault. USDC → raUSDC shares. Multi-strategy allocation. |
+| `AgentCredit` | Identity-aware credit lines. ERC-8004 reputation tiers. Utilization-based rate oracle. |
+| `RevenueBondFactory` | Revenue bond issuance, purchase, coupon distribution, maturity redemption. |
+| `StrategyAllocator` | Timelocked strategy weight management with drift detection. |
+
+### Periphery
+
+| Contract | Description |
+|---|---|
+| `ATIRouter` | Single entry point: deposit, borrow, depositAndBorrow in one call. |
+| `BaseStrategy` | Abstract strategy adapter with vault-only access control. |
+| `StrategyAave` | Aave V3 USDC lending strategy. |
+| `StrategyMorpho` | Morpho optimized lending strategy. |
+| `StrategyOndoUSDY` | Ondo USDY tokenized treasury yield strategy. |
+
+### Libraries
+
+| Library | Description |
+|---|---|
+| `MathLib` | Fixed-point math, share/asset conversions, virtual offset inflation protection. |
+| `ErrorLib` | All custom errors — zero `require()` across the protocol. |
+
+### Tokens
+
+| Token | Description |
+|---|---|
+| `BondToken` | ERC-20 bond receipt tokens minted per bond issuance. |
+
+## Security Features
+
+| Feature | Description |
+|---|---|
+| Emergency withdrawal | `emergencyWithdraw()` works even when vault is paused (reserve-only) |
+| Strategy timelock | 24-hour delay on strategy additions (queue → execute → cancel) |
+| Withdrawal fee ramp | 0.1% fee on withdrawals within 24h of deposit (flash loan protection) |
+| Per-agent deposit caps | `perAgentCap` enforced alongside global `depositCap` |
+| Rate oracle | Utilization-based interest curve (base + slope1 below optimal + slope2 jump) |
+| ERC-4626 compatibility | Full view functions: convertToShares/Assets, maxWithdraw/Redeem, preview* |
+| Inflation protection | Virtual shares/assets offset prevents first-depositor attacks |
+| Reentrancy guards | `nonReentrant` on all state-changing functions |
+| Custom errors | Zero `require()` — all custom errors for gas efficiency |
+| Pausable | Owner can pause deposits/withdrawals; emergency withdraw still works |
+| Two-step ownership | `transferOwnership` + `acceptOwnership` pattern |
+
+## Tests
+
+116/116 passing across 6 test suites:
+
+| Suite | Tests | Coverage |
 |---|---|---|
-| `ArcisVault.sol` | ERC-4626 vault with ATI interface. Accepts USDC, mints raUSDC | 530 |
-| `AgentCredit.sol` | Identity-aware lending with 5 reputation tiers | 374 |
-| `RevenueBondFactory.sol` | Issues and manages agent revenue bonds | 344 |
-| `StrategyAllocator.sol` | Timelocked capital allocation across yield sources | 173 |
-| `ATIRouter.sol` | Single-call entry point for all agent interactions | 215 |
-| `BondToken.sol` | ERC-1155 bond position tokens | 232 |
-| `StrategyAave.sol` | Aave V3 yield adapter | 137 |
-| `StrategyMorpho.sol` | Morpho Blue / MetaMorpho adapter | 145 |
-| `StrategyOndoUSDY.sol` | Ondo USDY tokenized treasury adapter | 202 |
+| ArcisVault | 27 | Deposit, withdraw, shares, strategies, fees, pause, ownership |
+| AgentCredit | 11 | Borrow, repay, tiers, interest, collateral, liquidation |
+| RevenueBondFactory | 20 | Issue, purchase, service debt, coupon, redeem, default |
+| SecurityAudit | 32 | Access control, reentrancy, inflation, invariants, edge cases |
+| ATIRouter | 15 | Deposit, borrow, depositAndBorrow, position queries |
+| StrategyAllocator | 11 | Queue, execute, cancel, drift, timelock, ownership |
 
-## The ATI Standard
+## Subgraph
 
-The Agent Treasury Interface. Three functions that let any agent manage capital.
+The `subgraph/` directory contains a ready-to-deploy subgraph for The Graph:
 
-```solidity
-interface IAgentTreasury {
-    function deposit(uint256 amount) external returns (uint256 shares);
-    function withdraw(uint256 shares) external returns (uint256 amount);
-    function balance(address agent) external view returns (uint256);
-}
-```
+- `schema.graphql` — Deposit, Withdrawal, Harvest, Loan, VaultSnapshot, ProtocolStats
+- `src/vault.ts` — Vault event handlers
+- `src/credit.ts` — Credit event handlers
 
-No approvals flow. No UI callbacks. No human-in-the-loop.
-Designed for machines that operate 24/7/365.
+## Deployed (Base Sepolia)
 
-## Security Model
-
-- Virtual share offset prevents ERC-4626 inflation attacks
-- Reentrancy guards on all state-changing functions
-- Deposit cap enforced at vault level
-- Strategy allocation changes timelocked (24h)
-- Two-step ownership transfer
-- Emergency withdrawal per strategy
-- Per-block interest accrual (no timestamp manipulation)
-- Pausable by multisig
-
-## Build
-
-```bash
-# Install Foundry
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-
-# Clone and build
-git clone https://github.com/Arcis-Protocol/core.git
-cd core
-forge install
-forge build
-
-# Run tests (116 tests)
-forge test
-
-# Run with verbose output
-forge test -vvv
-```
-
-## Deploy
-
-```bash
-# Set environment
-export PRIVATE_KEY=<deployer_key>
-export MULTISIG=<multisig_address>
-
-# Phase 1: Vault + Allocator + Router
-forge script script/Deploy.s.sol --rpc-url base --broadcast --verify
-
-# Phase 2: Strategy adapters (after vault is live)
-export VAULT_ADDRESS=<deployed_vault>
-forge script script/DeployStrategies.s.sol --rpc-url base --broadcast --verify
-```
-
-## Target Chain
-
-Base (Coinbase L2). USDC native. Aave V3 live. Morpho Blue live.
-Coinbase Agentic Wallets. x402 protocol. Virtuals ecosystem.
-
-Solana expansion planned for Phase 2.
-
-## Test Results
-
-```
-116 tests passed, 0 failed
-├── ArcisVault: 27 tests (deposit, withdraw, balance, strategy, harvest, ERC-20, admin)
-├── AgentCredit: 11 tests (borrow, repay, collateral tiers, health factor, interest)
-├── RevenueBondFactory: 20 tests (issue, purchase, coupon, redeem, service, pause)
-├── SecurityAudit: 32 tests (access control, pause enforcement, edge cases, invariants)
-```
-
-## Project Structure
-
-```
-src/
-├── core/
-│   ├── ArcisVault.sol          # ERC-4626 vault + ATI
-│   ├── AgentCredit.sol         # Identity-aware lending
-│   ├── RevenueBondFactory.sol  # Bond issuance + management
-│   └── StrategyAllocator.sol   # Capital allocation with timelock
-├── interfaces/
-│   ├── IAgentTreasury.sol      # ATI standard
-│   ├── IAgentCredit.sol        # Credit module interface
-│   ├── IAgentIdentity.sol      # ERC-8004 reader
-│   ├── IRevenueBond.sol        # Bond interface
-│   └── IStrategyAdapter.sol    # Strategy adapter interface
-├── libraries/
-│   ├── ErrorLib.sol            # Custom errors
-│   └── MathLib.sol             # Fixed-point math
-├── periphery/
-│   ├── ATIRouter.sol           # Agent entry point
-│   ├── BaseStrategy.sol        # Shared adapter logic
-│   ├── StrategyAave.sol        # Aave V3 adapter
-│   ├── StrategyMorpho.sol      # Morpho adapter
-│   └── StrategyOndoUSDY.sol    # Ondo USDY adapter
-└── tokens/
-    └── BondToken.sol           # ERC-1155 bond positions
-
-test/
-├── ArcisVault.t.sol
-├── AgentCredit.t.sol
-├── RevenueBondFactory.t.sol
-├── SecurityAudit.t.sol
-└── mocks/
-    ├── MockUSDC.sol
-    ├── MockStrategy.sol
-    └── MockIdentityRegistry.sol
-
-script/
-├── Deploy.s.sol                # Phase 1 deployment
-└── DeployStrategies.s.sol      # Strategy deployment
-```
-
-## Reputation Tiers
-
-| Tier | ERC-8004 Score | Collateral Ratio | Rate Discount |
-|---|---|---|---|
-| 0 — No Identity | — | 200% | 0 bps |
-| 1 — Novice | 1-25 | 175% | 100 bps |
-| 2 — Active | 26-50 | 150% | 200 bps |
-| 3 — Established | 51-75 | 130% | 350 bps |
-| 4 — Elite | 76-100 | 115% | 500 bps |
+| Contract | Address |
+|---|---|
+| ArcisVault (raUSDC) | `0xa8eF658E125C7f6D7aFa9B6b8035b66b32CBE98d` |
+| AgentCredit | `0x019540E33a0292a9DDE36bD9Ef11774d5A1Ce6FC` |
+| ATIRouter | `0x0281e7D37683c585325004F84e0b94170c78d5B4` |
+| StrategyAllocator | `0x9f101e1159AA530dC5Cb104decB32aBA1eAF2617` |
 
 ## Related Repos
 
 | Repo | Description |
 |---|---|
-| [`sdk`](https://github.com/Arcis-Protocol/sdk) | TypeScript SDK — `@arcisprotocol/sdk`, viem-based |
-| [`cli`](https://github.com/Arcis-Protocol/cli) | Terminal interface — TUI for vault operations |
-| [`app`](https://github.com/Arcis-Protocol/app) | Landing page + dashboard — [arcis.money](https://arcis.money) |
-| [`docs`](https://github.com/Arcis-Protocol/docs) | Protocol docs, ATI spec, integration guides |
-| [`mcp`](https://github.com/Arcis-Protocol/mcp) | MCP Server — connect any AI agent in one tool call |
-| [`monitor`](https://github.com/Arcis-Protocol/monitor) | On-chain monitoring + Telegram alerts |
+| [`sdk`](https://github.com/Arcis-Protocol/sdk) | `@arcisprotocol/sdk` — TypeScript SDK |
+| [`mcp`](https://github.com/Arcis-Protocol/mcp) | `@arcisprotocol/mcp` — MCP server for AI agents |
 | [`custos`](https://github.com/Arcis-Protocol/custos) | CUSTOS — autonomous keeper agent |
+| [`app`](https://github.com/Arcis-Protocol/app) | arcis.money — landing + dashboard |
+| [`docs`](https://github.com/Arcis-Protocol/docs) | ATI v1.1, integration guide, SDK examples |
 
 ---
 
-<p align="center">
-  <em>ARCIS · Of the Citadel · MMXXVI</em>
-  <br />
-  <br />
-  Built for agents. Backed by yield. Secured by math.
-</p>
+*ARCIS · Solidity 0.8.24 · Foundry · Base · MMXXVI*
