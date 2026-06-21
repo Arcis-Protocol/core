@@ -117,6 +117,7 @@ contract ArcisVaultTest is Test {
         vm.prank(agent1);
         uint256 shares = vault.deposit(10_000e6);
 
+        vm.warp(block.timestamp + 25 hours); // Past withdrawal fee window
         vm.prank(agent1);
         uint256 amount = vault.withdraw(shares);
 
@@ -164,7 +165,9 @@ contract ArcisVaultTest is Test {
 
     function test_balance_grows_with_yield() public {
         // Add a strategy and simulate yield
-        vault.addStrategy(address(strategyA), 9_000); // 90% allocation
+        vault.queueStrategy(address(strategyA), 9_000);
+        vm.warp(block.timestamp + 25 hours);
+        vault.executeStrategy(); // 90% allocation
 
         vm.prank(agent1);
         vault.deposit(10_000e6);
@@ -188,21 +191,29 @@ contract ArcisVaultTest is Test {
     //                    STRATEGY TESTS
     // ══════════════════════════════════════════════════════════════
 
-    function test_addStrategy() public {
-        vault.addStrategy(address(strategyA), 9_000);
+    function test_queueAndExecuteStrategy() public {
+        vault.queueStrategy(address(strategyA), 9_000);
+        vm.warp(block.timestamp + 25 hours);
+        vault.executeStrategy();
         assertEq(vault.strategyCount(), 1);
         assertTrue(vault.isStrategy(address(strategyA)));
     }
 
-    function test_addStrategy_reverts_duplicate() public {
-        vault.addStrategy(address(strategyA), 5_000);
+    function test_queueStrategy_reverts_duplicate() public {
+        vault.queueStrategy(address(strategyA), 5_000);
+        vm.warp(block.timestamp + 25 hours);
+        vault.executeStrategy();
         vm.expectRevert();
-        vault.addStrategy(address(strategyA), 4_000);
+        vault.queueStrategy(address(strategyA), 4_000);
     }
 
     function test_updateAllocations() public {
-        vault.addStrategy(address(strategyA), 5_000);
-        vault.addStrategy(address(strategyB), 4_000);
+        vault.queueStrategy(address(strategyA), 5_000);
+        vm.warp(block.timestamp + 25 hours);
+        vault.executeStrategy();
+        vault.queueStrategy(address(strategyB), 4_000);
+        vm.warp(block.timestamp + 25 hours);
+        vault.executeStrategy();
 
         uint256[] memory weights = new uint256[](2);
         weights[0] = 6_000;
@@ -211,8 +222,12 @@ contract ArcisVaultTest is Test {
     }
 
     function test_updateAllocations_reverts_bad_sum() public {
-        vault.addStrategy(address(strategyA), 5_000);
-        vault.addStrategy(address(strategyB), 4_000);
+        vault.queueStrategy(address(strategyA), 5_000);
+        vm.warp(block.timestamp + 25 hours);
+        vault.executeStrategy();
+        vault.queueStrategy(address(strategyB), 4_000);
+        vm.warp(block.timestamp + 25 hours);
+        vault.executeStrategy();
 
         uint256[] memory weights = new uint256[](2);
         weights[0] = 5_000;
@@ -222,7 +237,9 @@ contract ArcisVaultTest is Test {
     }
 
     function test_rebalance() public {
-        vault.addStrategy(address(strategyA), 9_000);
+        vault.queueStrategy(address(strategyA), 9_000);
+        vm.warp(block.timestamp + 25 hours);
+        vault.executeStrategy();
 
         // Fund strategy with USDC (to simulate it being able to accept)
         vm.prank(agent1);
@@ -241,7 +258,9 @@ contract ArcisVaultTest is Test {
     // ══════════════════════════════════════════════════════════════
 
     function test_harvest_accrues_fees() public {
-        vault.addStrategy(address(strategyA), 9_000);
+        vault.queueStrategy(address(strategyA), 9_000);
+        vm.warp(block.timestamp + 25 hours);
+        vault.executeStrategy();
 
         vm.prank(agent1);
         vault.deposit(10_000e6);
@@ -328,7 +347,9 @@ contract ArcisVaultTest is Test {
     }
 
     function test_emergencyWithdrawStrategy() public {
-        vault.addStrategy(address(strategyA), 9_000);
+        vault.queueStrategy(address(strategyA), 9_000);
+        vm.warp(block.timestamp + 25 hours);
+        vault.executeStrategy();
 
         vm.prank(agent1);
         vault.deposit(10_000e6);
@@ -355,6 +376,7 @@ contract ArcisVaultTest is Test {
         vm.prank(agent1);
         uint256 shares = vault.deposit(amount);
 
+        vm.warp(block.timestamp + 25 hours); // Past withdrawal fee window
         vm.prank(agent1);
         uint256 returned = vault.withdraw(shares);
 

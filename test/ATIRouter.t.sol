@@ -24,7 +24,9 @@ contract ATIRouterTest is Test {
         registry = new MockIdentityRegistry();
         vault = new ArcisVault(address(usdc), 10_000_000e6, 200, address(this), 2000);
         strategy = new MockStrategy(address(vault), address(usdc));
-        vault.addStrategy(address(strategy), 7000);
+        vault.queueStrategy(address(strategy), 7000);
+        vm.warp(block.timestamp + 25 hours);
+        vault.executeStrategy();
         credit = new AgentCredit(address(vault), address(usdc), address(registry), 500);
 
         // Fund credit lending pool

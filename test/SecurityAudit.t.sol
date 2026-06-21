@@ -34,7 +34,9 @@ contract SecurityAuditTest is Test {
         );
 
         strategy = new MockStrategy(address(vault), address(usdc));
-        vault.addStrategy(address(strategy), 7000);
+        vault.queueStrategy(address(strategy), 7000);
+        vm.warp(block.timestamp + 25 hours);
+        vault.executeStrategy();
 
         credit = new AgentCredit(
             address(vault), address(usdc), address(registry), 500
@@ -59,10 +61,10 @@ contract SecurityAuditTest is Test {
     //  ACCESS CONTROL
     // ═══════════════════════════════════════════════════
 
-    function test_vault_onlyOwner_addStrategy() public {
+    function test_vault_onlyOwner_queueStrategy() public {
         vm.prank(attacker);
         vm.expectRevert();
-        vault.addStrategy(address(0x1), 1000);
+        vault.queueStrategy(address(0x1), 1000);
     }
 
     function test_vault_onlyOwner_pause() public {

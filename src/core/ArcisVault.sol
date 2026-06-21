@@ -52,6 +52,15 @@ contract ArcisVault is IAgentTreasury {
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
 
+    /// @notice Timestamp of last deposit per agent (for withdrawal fee ramp)
+    mapping(address => uint256) public lastDepositTime;
+
+    /// @notice Early withdrawal fee in bps (applied within WITHDRAWAL_FEE_WINDOW)
+    uint256 public constant WITHDRAWAL_FEE_BPS = 10; // 0.1%
+
+    /// @notice Window after deposit during which withdrawal fee applies
+    uint256 public constant WITHDRAWAL_FEE_WINDOW = 24 hours;
+
     // ══════════════════════════════════════════════════════════════
     //                       VAULT STORAGE
     // ══════════════════════════════════════════════════════════════
@@ -64,6 +73,9 @@ contract ArcisVault is IAgentTreasury {
 
     /// @notice Maximum total deposits (in USDC)
     uint256 public depositCap;
+
+    /// @notice Maximum deposit per agent (0 = no per-agent limit)
+    uint256 public perAgentCap;
 
     /// @notice Management fee in basis points
     uint256 public feeBps;
@@ -98,6 +110,20 @@ contract ArcisVault is IAgentTreasury {
 
     /// @notice Target reserve ratio in bps (portion kept liquid in vault)
     uint256 public immutable reserveRatioBps;
+
+    /// @notice Strategy addition timelock (24 hours)
+    uint256 public constant STRATEGY_TIMELOCK = 24 hours;
+
+    /// @notice Pending strategy addition
+    struct PendingStrategy {
+        address strategy;
+        uint256 weight;
+        uint256 executeAfter;
+    }
+    PendingStrategy public pendingStrategy;
+
+    event StrategyQueued(address indexed strategy, uint256 weight, uint256 executeAfter);
+    event StrategyCancelled(address indexed strategy);
 
     // ══════════════════════════════════════════════════════════════
     //                         EVENTS
@@ -181,6 +207,14 @@ contract ArcisVault is IAgentTreasury {
             revert ErrorLib.VaultCapExceeded(amount, depositCap - totalBefore);
         }
 
+        // Per-agent cap check
+        if (perAgentCap > 0) {
+            uint256 currentValue = balanceOf[msg.sender] > 0 ? _convertToAssets(balanceOf[msg.sender], false) : 0;
+            if (currentValue + amount > perAgentCap) {
+                revert ErrorLib.VaultCapExceeded(amount, perAgentCap - currentValue);
+            }
+        }
+
         // Calculate shares BEFORE transfer (prevents manipulation)
         shares = _convertToShares(amount, false);
         if (shares == 0) revert ErrorLib.ZeroShares();
@@ -190,6 +224,9 @@ contract ArcisVault is IAgentTreasury {
 
         // Update reserve balance
         reserveBalance += amount;
+
+        // Record deposit time for withdrawal fee ramp
+        lastDepositTime[msg.sender] = block.timestamp;
 
         // Mint raUSDC shares
         _mint(msg.sender, shares);
@@ -220,10 +257,46 @@ contract ArcisVault is IAgentTreasury {
         // Burn shares
         _burn(msg.sender, shares);
 
-        // Update reserve
-        reserveBalance -= amount;
+        // Apply early withdrawal fee if within 24h of deposit
+        uint256 fee = 0;
+        if (block.timestamp < lastDepositTime[msg.sender] + WITHDRAWAL_FEE_WINDOW) {
+            fee = MathLib.bps(amount, WITHDRAWAL_FEE_BPS);
+            if (fee > 0 && feeRecipient != address(0)) {
+                _safeTransfer(USDC, feeRecipient, fee);
+            }
+            amount -= fee;
+        }
+
+        // Update reserve (full amount including fee leaves the vault)
+        reserveBalance -= (amount + fee);
 
         // Transfer USDC to agent
+        _safeTransfer(USDC, msg.sender, amount);
+
+        emit Withdraw(msg.sender, amount, shares);
+    }
+
+    /// @notice Emergency withdrawal — works even when vault is paused
+    /// @dev Only withdraws from reserve (no strategy pulls). Users can exit
+    ///      after owner calls emergencyWithdrawStrategy() to refill reserve.
+    /// @param shares raUSDC shares to redeem
+    /// @return amount USDC returned to caller
+    function emergencyWithdraw(uint256 shares) external nonReentrant returns (uint256 amount) {
+        if (shares == 0) revert ErrorLib.ZeroShares();
+        if (balanceOf[msg.sender] < shares) {
+            revert ErrorLib.InsufficientShares(shares, balanceOf[msg.sender]);
+        }
+
+        amount = _convertToAssets(shares, false);
+        if (amount == 0) revert ErrorLib.ZeroAmount();
+
+        // Emergency: reserve only, no strategy pulls
+        if (amount > reserveBalance) {
+            revert ErrorLib.InsufficientLiquidity(amount, reserveBalance);
+        }
+
+        _burn(msg.sender, shares);
+        reserveBalance -= amount;
         _safeTransfer(USDC, msg.sender, amount);
 
         emit Withdraw(msg.sender, amount, shares);
@@ -252,11 +325,19 @@ contract ArcisVault is IAgentTreasury {
 
     /// @notice Maximum amount that can be deposited by a given agent (ATI v1.1)
     /// @dev Returns 0 if vault is paused or at capacity
-    function maxDeposit(address) external view returns (uint256) {
+    function maxDeposit(address agent) external view returns (uint256) {
         if (paused) return 0;
         uint256 total = totalAssets();
         if (total >= depositCap) return 0;
-        return depositCap - total;
+        uint256 globalRemaining = depositCap - total;
+
+        if (perAgentCap == 0) return globalRemaining;
+
+        uint256 currentValue = balanceOf[agent] > 0 ? _convertToAssets(balanceOf[agent], false) : 0;
+        if (currentValue >= perAgentCap) return 0;
+        uint256 agentRemaining = perAgentCap - currentValue;
+
+        return MathLib.min(globalRemaining, agentRemaining);
     }
 
     /// @notice Current exchange rate: USDC per raUSDC share (in WAD)
@@ -294,18 +375,36 @@ contract ArcisVault is IAgentTreasury {
     /// @notice Add a new yield strategy
     /// @param strategy Address of the strategy adapter
     /// @param weight Allocation weight in bps
-    function addStrategy(address strategy, uint256 weight) external onlyOwner {
+    function queueStrategy(address strategy, uint256 weight) external onlyOwner {
         if (strategy == address(0)) revert ErrorLib.ZeroAddress();
         if (isStrategy[strategy]) revert ErrorLib.StrategyAlreadyRegistered(strategy);
 
-        strategies.push(IStrategyAdapter(strategy));
-        allocationWeights.push(weight);
-        isStrategy[strategy] = true;
+        uint256 executeAfter = block.timestamp + STRATEGY_TIMELOCK;
+        pendingStrategy = PendingStrategy(strategy, weight, executeAfter);
 
-        // Approve strategy to pull USDC
-        _safeApprove(USDC, strategy, type(uint256).max);
+        emit StrategyQueued(strategy, weight, executeAfter);
+    }
 
-        emit StrategyAdded(strategy, weight);
+    function executeStrategy() external onlyOwner {
+        PendingStrategy memory ps = pendingStrategy;
+        if (ps.strategy == address(0)) revert ErrorLib.ZeroAddress();
+        if (block.timestamp < ps.executeAfter) revert ErrorLib.TimelockNotExpired(ps.executeAfter);
+        if (isStrategy[ps.strategy]) revert ErrorLib.StrategyAlreadyRegistered(ps.strategy);
+
+        strategies.push(IStrategyAdapter(ps.strategy));
+        allocationWeights.push(ps.weight);
+        isStrategy[ps.strategy] = true;
+
+        _safeApprove(USDC, ps.strategy, type(uint256).max);
+
+        delete pendingStrategy;
+        emit StrategyAdded(ps.strategy, ps.weight);
+    }
+
+    function cancelPendingStrategy() external onlyOwner {
+        address s = pendingStrategy.strategy;
+        delete pendingStrategy;
+        emit StrategyCancelled(s);
     }
 
     /// @notice Update allocation weights for all strategies
@@ -384,6 +483,10 @@ contract ArcisVault is IAgentTreasury {
     function setDepositCap(uint256 newCap) external onlyOwner {
         emit DepositCapUpdated(depositCap, newCap);
         depositCap = newCap;
+    }
+
+    function setPerAgentCap(uint256 newCap) external onlyOwner {
+        perAgentCap = newCap;
     }
 
     function setFeeBps(uint256 newFee) external onlyOwner {
