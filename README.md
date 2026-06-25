@@ -73,14 +73,14 @@ The `subgraph/` directory contains a ready-to-deploy subgraph for The Graph:
 - `src/vault.ts` — Vault event handlers
 - `src/credit.ts` — Credit event handlers
 
-## Deployed (Base Sepolia)
+## Deployed (Base Mainnet)
 
 | Contract | Address |
 |---|---|
-| ArcisVault (raUSDC) | `0xa8eF658E125C7f6D7aFa9B6b8035b66b32CBE98d` |
-| AgentCredit | `0x019540E33a0292a9DDE36bD9Ef11774d5A1Ce6FC` |
-| ATIRouter | `0x0281e7D37683c585325004F84e0b94170c78d5B4` |
-| StrategyAllocator | `0x9f101e1159AA530dC5Cb104decB32aBA1eAF2617` |
+| ArcisVault (raUSDC) | [`0x00325d9da832b38179ed2f0dabd4062d93e325a7`](https://basescan.org/address/0x00325d9da832b38179ed2f0dabd4062d93e325a7) |
+| ATIRouter | [`0xeC3b7Daa942C03651D55A4A01797498fA6dB728F`](https://basescan.org/address/0xeC3b7Daa942C03651D55A4A01797498fA6dB728F) |
+| StrategyAave | [`0x43626D6162Ccb12328B989BB228DaD2941F2F12a`](https://basescan.org/address/0x43626D6162Ccb12328B989BB228DaD2941F2F12a) |
+| StrategyAllocator | [`0x7Fd5d7b49694858FCf143E0039e83cDB0196DD7A`](https://basescan.org/address/0x7Fd5d7b49694858FCf143E0039e83cDB0196DD7A) |
 
 ## Related Repos
 
