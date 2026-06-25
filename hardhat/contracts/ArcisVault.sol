@@ -381,16 +381,16 @@ contract ArcisVault is IAgentTreasury {
     }
 
     /// @notice Maximum assets an owner can withdraw
-    function maxWithdraw(address owner) external view returns (uint256) {
+    function maxWithdraw(address account) external view returns (uint256) {
         if (paused) return 0;
-        if (balanceOf[owner] == 0) return 0;
-        return _convertToAssets(balanceOf[owner], false);
+        if (balanceOf[account] == 0) return 0;
+        return _convertToAssets(balanceOf[account], false);
     }
 
     /// @notice Maximum shares an owner can redeem
-    function maxRedeem(address owner) external view returns (uint256) {
+    function maxRedeem(address account) external view returns (uint256) {
         if (paused) return 0;
-        return balanceOf[owner];
+        return balanceOf[account];
     }
 
     /// @notice Maximum shares that can be minted (based on remaining deposit cap)
