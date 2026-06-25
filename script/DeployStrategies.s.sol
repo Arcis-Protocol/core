@@ -48,7 +48,8 @@ contract DeployStrategies is Script {
         console.log("StrategyAave deployed:", address(aaveStrategy));
 
         // 2. Register Aave strategy with vault (45% allocation)
-        vault.addStrategy(address(aaveStrategy), 4_500);
+        vault.queueStrategy(address(aaveStrategy), 4_500);
+        // NOTE: Wait 24h then call vault.executeStrategy() to activate
         console.log("Aave strategy registered: 45% allocation");
 
         // 3. Deploy Morpho strategy (if address set)
@@ -60,7 +61,7 @@ contract DeployStrategies is Script {
             );
             console.log("StrategyMorpho deployed:", address(morphoStrategy));
 
-            vault.addStrategy(address(morphoStrategy), 3_000);
+            vault.queueStrategy(address(morphoStrategy), 3_000);
             console.log("Morpho strategy registered: 30% allocation");
         }
 
@@ -74,7 +75,7 @@ contract DeployStrategies is Script {
             );
             console.log("StrategyOndoUSDY deployed:", address(ondoStrategy));
 
-            vault.addStrategy(address(ondoStrategy), 1_500);
+            vault.queueStrategy(address(ondoStrategy), 1_500);
             console.log("Ondo strategy registered: 15% allocation");
         }
 

@@ -87,7 +87,7 @@ contract DeployAaveStrategy is Script {
 
         // Register with vault
         ArcisVault vault = ArcisVault(VAULT_MAINNET);
-        vault.addStrategy(address(strategy), 7000); // 70% weight
+        vault.queueStrategy(address(strategy), 7000); // 70% weight
 
         console.log("Strategy registered with vault at 70% weight");
         console.log("30% reserve maintained for instant withdrawals");
