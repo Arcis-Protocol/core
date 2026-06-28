@@ -18,7 +18,7 @@ Smart contracts powering financial infrastructure for autonomous AI agents. Live
 
 | Contract | Address | Description |
 |---|---|---|
-| ATIRouter | [`0xeC3b...728F`](https://basescan.org/address/0xeC3b7Daa942C03651D55A4A01797498fA6dB728F) | Single entry point: deposit, borrow, depositAndBorrow. |
+| ATIRouter | [`0xeC3b...728F`](https://basescan.org/address/0xd0c64f997ca9aa427f8834578bd7f0313f868e83) | Single entry point: deposit, borrow, depositAndBorrow. |
 | StrategyAave | [`0x4362...F12a`](https://basescan.org/address/0x43626D6162Ccb12328B989BB228DaD2941F2F12a) | Aave V3 USDC lending strategy. |
 
 ## Security
