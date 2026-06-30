@@ -64,7 +64,7 @@
 | ATIRouter.sol | Single-call entry point for agents |
 | StrategyAave.sol | Aave V3 adapter |
 | StrategyMorpho.sol | Morpho adapter |
-| StrategyOndoUSDY.sol | Ondo USDY adapter |
+| StrategyOndoUSDY.sol | Reserved — Ondo not on Base yet |
 
 ### Libraries (src/libraries/)
 | Library | Purpose |

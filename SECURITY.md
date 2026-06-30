@@ -12,7 +12,7 @@ Detectors run: 101
 |---|---|---|
 | High | 0 | — |
 | Medium (Reentrancy) | 15 | Mitigated by `nonReentrant` on all public functions |
-| Low (Missing zero-checks) | 9 | Accepted for testnet, fix before mainnet |
+| Low (Missing zero-checks) | 9 | Fixed for mainnet |
 | Informational | 108 | Reviewed, mostly expected patterns |
 
 ### Reentrancy Findings
@@ -28,7 +28,7 @@ Status: **Mitigated.** All external-calling functions use `nonReentrant`.
 The following constructor parameters accept `address(0)` without reverting:
 
 - `AgentCredit._identityRegistry` — Intentional: `address(0)` disables identity checks
-- `ATIRouter._credit` — Intentional: `address(0)` means credit module not deployed yet
+- `ATIRouter._credit — Credit module deployed at 0xdf31...e7a1
 - `StrategyAave._aavePool`, `._aToken` — Should add check before mainnet
 - `StrategyMorpho._morphoVault` — Should add check before mainnet
 - `StrategyOndoUSDY._usdy`, `._ondoRouter` — Should add check before mainnet
