@@ -28,7 +28,7 @@
       ▼              ▼             ▼               ▼
 ┌──────────────────────────────────────────────────────────┐
 │                   YIELD SOURCES                           │
-│  Aave V3  ·  Morpho  ·  Ondo USDY  ·  Stable LP         │
+│  Aave V3  ·  Morpho  ·  Future Strategies  ·  Stable LP         │
 └──────────────────────────────────────────────────────────┘
 ```
 
