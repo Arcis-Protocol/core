@@ -64,9 +64,9 @@ contract DeployTestnet is Script {
         MockStrategy strategy = new MockStrategy(address(usdc), address(vault));
         console.log("[4/8] MockStrategy:", address(strategy));
 
-        // Register strategy with vault (90% allocation)
-        vault.addStrategy(address(strategy), 9_000);
-        console.log("     Strategy registered: 90% allocation");
+        // Queue strategy with vault (90% allocation) — execute after 24h timelock
+        vault.queueStrategy(address(strategy), 9_000);
+        console.log("     Strategy queued: 90% allocation (executeStrategy after 24h)");
 
         // ── 5. StrategyAllocator ──
         StrategyAllocator allocator = new StrategyAllocator(
